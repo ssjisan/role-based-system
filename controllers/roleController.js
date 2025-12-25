@@ -88,35 +88,26 @@ const getRoleById = async (req, res) => {
  */
 const updateRole = async (req, res) => {
   try {
+    const { id } = req.params;
     const { name, description, permissions } = req.body;
 
-    const role = await Role.findByIdAndUpdate(
-      req.params.id,
-      {
-        name,
-        description,
-        permissions,
-      },
-      { new: true, runValidators: true }
-    );
+    const role = await Role.findById(id);
+    if (!role)
+      return res
+        .status(404)
+        .json({ success: false, message: "Role not found" });
 
-    if (!role) {
-      return res.status(404).json({
-        success: false,
-        message: "Role not found",
-      });
-    }
+    // Update fields
+    role.name = name;
+    role.description = description;
+    role.permissions = permissions;
 
-    res.status(200).json({
-      success: true,
-      message: "Role updated successfully",
-      role,
-    });
+    await role.save();
+    res
+      .status(200)
+      .json({ success: true, message: "Role updated successfully", role });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 

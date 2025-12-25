@@ -1,5 +1,8 @@
 const Page = require("../models/pageModel.js");
 
+//-----------------------------------------------------//
+//---------------------Creata pages-------------------//
+//-----------------------------------------------------//
 const createPage = async (req, res) => {
   try {
     const { name, slug, description, availableActions, order, group } =
@@ -58,6 +61,9 @@ const createPage = async (req, res) => {
     });
   }
 };
+//-----------------------------------------------------//
+//---------------------Creata pages-------------------//
+//-----------------------------------------------------//
 
 //-----------------------------------------------------//
 //---------------------Get all pages-------------------//
@@ -65,7 +71,9 @@ const createPage = async (req, res) => {
 
 const getAllPages = async (req, res) => {
   try {
-    const pages = await Page.find().sort({ order: 1 });
+    const pages = await Page.find()
+      .populate("group", "name")
+      .sort({ order: 1 });
 
     res.status(200).json({
       success: true,
@@ -80,9 +88,13 @@ const getAllPages = async (req, res) => {
   }
 };
 
-/**
- * Get single page by ID
- */
+//-----------------------------------------------------//
+//---------------------Get all pages-------------------//
+//-----------------------------------------------------//
+
+//-----------------------------------------------------//
+//---------------------Get pages By id-----------------//
+//-----------------------------------------------------//
 const getPageById = async (req, res) => {
   try {
     const page = await Page.findById(req.params.id);
@@ -106,25 +118,17 @@ const getPageById = async (req, res) => {
   }
 };
 
-/**
- * Update page
- */
+//-----------------------------------------------------//
+//---------------------Update Page---------------------//
+//-----------------------------------------------------//
 const updatePage = async (req, res) => {
   try {
-    const { name, slug, description, availableActions, isActive } = req.body;
+    const { id } = req.params;
+    const { name, slug, description, availableActions, order, group } =
+      req.body;
 
-    const page = await Page.findByIdAndUpdate(
-      req.params.id,
-      {
-        name,
-        slug,
-        description,
-        availableActions,
-        isActive,
-      },
-      { new: true, runValidators: true }
-    );
-
+    // Find page by id
+    const page = await Page.findById(id);
     if (!page) {
       return res.status(404).json({
         success: false,
@@ -132,12 +136,52 @@ const updatePage = async (req, res) => {
       });
     }
 
+    // Check if name or slug conflicts with other pages
+    const conflict = await Page.findOne({
+      _id: { $ne: id }, // ignore current page
+      $or: [{ name }, { slug }],
+    });
+    if (conflict) {
+      return res.status(400).json({
+        success: false,
+        message: "Page name or slug already exists",
+      });
+    }
+
+    // Check order conflict
+    if (order !== undefined) {
+      const orderExists = await Page.findOne({ _id: { $ne: id }, order });
+      if (orderExists) {
+        const lastOrder = await Page.findOne()
+          .sort({ order: -1 })
+          .select("order");
+        const suggestedOrder = lastOrder ? lastOrder.order + 1 : 1;
+
+        return res.status(400).json({
+          success: false,
+          message: `Order ${order} is already in use`,
+          suggestedOrder,
+        });
+      }
+    }
+
+    // Update fields
+    page.name = name;
+    page.slug = slug;
+    page.description = description;
+    page.availableActions = availableActions;
+    page.order = order;
+    page.group = group || null;
+
+    await page.save();
+
     res.status(200).json({
       success: true,
       message: "Page updated successfully",
       page,
     });
   } catch (error) {
+    console.error("Update page error:", error);
     res.status(500).json({
       success: false,
       message: error.message,
@@ -145,9 +189,51 @@ const updatePage = async (req, res) => {
   }
 };
 
+//-----------------------------------------------------//
+//---------------------Update Page---------------------//
+//-----------------------------------------------------//
+
+//-----------------------------------------------------//
+//---------------------Delete Page---------------------//
+//-----------------------------------------------------//
+
+const deletePage = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Find page by id
+    const page = await Page.findById(id);
+    if (!page) {
+      return res.status(404).json({
+        success: false,
+        message: "Page not found",
+      });
+    }
+
+    // Delete page
+    await Page.findByIdAndDelete(id);
+
+    res.status(200).json({
+      success: true,
+      message: "Page deleted successfully",
+    });
+  } catch (error) {
+    console.error("Delete page error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+//-----------------------------------------------------//
+//---------------------Delete Page---------------------//
+//-----------------------------------------------------//
+
 module.exports = {
   createPage,
   getAllPages,
   getPageById,
   updatePage,
+  deletePage,
 };

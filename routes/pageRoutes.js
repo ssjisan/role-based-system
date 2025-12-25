@@ -5,22 +5,17 @@ const {
   getAllPages,
   getPageById,
   updatePage,
+  deletePage,
 } = require("../controllers/pageController");
 const { authenticate } = require("../middleware/auth.js");
 
 // All routes require authentication
 // router.use(authenticate);
 
-// Get all pages
 router.get("/pages-list", getAllPages);
-
-// Get single page
-router.get("/public", getPageById);
-
-// Create page
 router.post("/create-page", createPage);
-
-// Update page
-router.put("/:id", updatePage);
+router.put("/edit-page/:id", updatePage);
+router.get("/page/:id", getPageById);
+router.delete("/delete-page/:id", deletePage);
 
 module.exports = router;

@@ -23,7 +23,7 @@ router.get("/roles", getAllRoles);
 router.get("/role/:id", getRoleById);
 
 // Update role
-router.put("/:id", checkPermission("role", "edit"), updateRole);
+router.put("/edit-role/:id", updateRole);
 
 // Delete role
 router.delete("/:id", checkPermission("role", "delete"), deleteRole);
