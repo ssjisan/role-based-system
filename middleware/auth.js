@@ -1,7 +1,7 @@
-const jwt = require("jsonwebtoken");
+const User = require("../models/userModel.js");
 const { verifyToken } = require("./verifyToken.js");
 
-const authenticate = (req, res, next) => {
+const authenticate = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
 
@@ -10,9 +10,16 @@ const authenticate = (req, res, next) => {
     }
 
     const token = authHeader.split(" ")[1];
-
     const decoded = verifyToken(token);
-    req.user = decoded.userId;
+
+    const user = await User.findById(decoded.userId).select("role email");
+
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
+
+    // ✅ attach full user
+    req.user = user;
 
     next();
   } catch (error) {

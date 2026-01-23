@@ -14,6 +14,12 @@ const pageSchema = new mongoose.Schema({
     trim: true,
     lowercase: true,
   },
+  iconName: {
+    type: String,
+    required: false,
+    unique: false,
+    trim: true,
+  },
   order: {
     type: Number,
     default: 0,

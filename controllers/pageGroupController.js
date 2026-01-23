@@ -1,13 +1,13 @@
 const PageGroup = require("../models/pageGroupModel.js");
 
-/**
- * Create a new page group
- */
+// ====================================
+// Create a new page group
+// ====================================
+
 const createPageGroup = async (req, res) => {
   try {
-    const { name, order } = req.body;
+    const { name, order, iconName } = req.body;
 
-    // 1️⃣ Basic validation
     if (!name) {
       return res.status(400).json({
         success: false,
@@ -15,7 +15,6 @@ const createPageGroup = async (req, res) => {
       });
     }
 
-    // 2️⃣ Check duplicate group
     const existingGroup = await PageGroup.findOne({ name });
     if (existingGroup) {
       return res.status(409).json({
@@ -24,9 +23,9 @@ const createPageGroup = async (req, res) => {
       });
     }
 
-    // 3️⃣ Create group
     const group = await PageGroup.create({
-      name,
+      name: name.trim(),
+      iconName: iconName?.trim() || null, // ✅ added
       order: order ?? 0,
     });
 
@@ -37,7 +36,6 @@ const createPageGroup = async (req, res) => {
     });
   } catch (error) {
     console.error("Create page group error:", error);
-
     return res.status(500).json({
       success: false,
       message: "Failed to create page group",
@@ -45,6 +43,9 @@ const createPageGroup = async (req, res) => {
   }
 };
 
+/**
+ * Get all page groups
+ */
 const getAllPageGroups = async (req, res) => {
   try {
     const groups = await PageGroup.find().sort({ order: 1, createdAt: 1 });
@@ -63,7 +64,38 @@ const getAllPageGroups = async (req, res) => {
     });
   }
 };
+
+const deletePageGroup = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Find page by id
+    const page = await PageGroup.findById(id);
+    if (!page) {
+      return res.status(404).json({
+        success: false,
+        message: "Page not found",
+      });
+    }
+
+    // Delete page
+    await PageGroup.findByIdAndDelete(id);
+
+    res.status(200).json({
+      success: true,
+      message: "Page deleted successfully",
+    });
+  } catch (error) {
+    console.error("Delete page error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   createPageGroup,
   getAllPageGroups,
+  deletePageGroup,
 };

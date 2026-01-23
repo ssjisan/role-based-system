@@ -5,10 +5,26 @@ const Page = require("../models/pageModel.js");
 //-----------------------------------------------------//
 const createPage = async (req, res) => {
   try {
-    const { name, slug, description, availableActions, order, group } =
+    let { name, slug, description, availableActions, order, group, iconName } =
       req.body;
 
-    // Check name or slug exists
+    // 🔹 Normalize slug
+    if (!slug) {
+      return res.status(400).json({
+        success: false,
+        message: "Slug is required",
+      });
+    }
+
+    slug = slug.trim().toLowerCase();
+
+    // Ensure single leading slash
+    if (!slug.startsWith("/")) {
+      slug = `/${slug}`;
+    }
+    slug = slug.replace(/\/+/g, "/"); // remove double slashes
+
+    // 🔹 Check name or slug exists
     const existingPage = await Page.findOne({
       $or: [{ name }, { slug }],
     });
@@ -39,14 +55,15 @@ const createPage = async (req, res) => {
       }
     }
 
-    // Create page
+    // 🔹 Create page
     const page = await Page.create({
       name,
       slug,
+      iconName, // ✅ added
       description,
       availableActions,
       order,
-      group: group || null, // ✅ optional
+      group: group || null,
     });
 
     res.status(201).json({
@@ -61,6 +78,7 @@ const createPage = async (req, res) => {
     });
   }
 };
+
 //-----------------------------------------------------//
 //---------------------Creata pages-------------------//
 //-----------------------------------------------------//
@@ -124,10 +142,10 @@ const getPageById = async (req, res) => {
 const updatePage = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, slug, description, availableActions, order, group } =
+    let { name, slug, description, availableActions, order, group, iconName } =
       req.body;
 
-    // Find page by id
+    // 🔹 Find page
     const page = await Page.findById(id);
     if (!page) {
       return res.status(404).json({
@@ -136,25 +154,47 @@ const updatePage = async (req, res) => {
       });
     }
 
-    // Check if name or slug conflicts with other pages
-    const conflict = await Page.findOne({
-      _id: { $ne: id }, // ignore current page
-      $or: [{ name }, { slug }],
-    });
-    if (conflict) {
-      return res.status(400).json({
-        success: false,
-        message: "Page name or slug already exists",
-      });
+    // 🔹 Normalize slug (only if provided)
+    if (slug !== undefined) {
+      slug = slug.trim().toLowerCase();
+
+      if (!slug.startsWith("/")) {
+        slug = `/${slug}`;
+      }
+
+      slug = slug.replace(/\/+/g, "/");
     }
 
-    // Check order conflict
+    // 🔹 Check name / slug conflict (ignore self)
+    if (name !== undefined || slug !== undefined) {
+      const conflict = await Page.findOne({
+        _id: { $ne: id },
+        $or: [
+          name !== undefined ? { name } : null,
+          slug !== undefined ? { slug } : null,
+        ].filter(Boolean),
+      });
+
+      if (conflict) {
+        return res.status(400).json({
+          success: false,
+          message: "Page name or slug already exists",
+        });
+      }
+    }
+
+    // 🔹 Check order conflict
     if (order !== undefined) {
-      const orderExists = await Page.findOne({ _id: { $ne: id }, order });
+      const orderExists = await Page.findOne({
+        _id: { $ne: id },
+        order,
+      });
+
       if (orderExists) {
         const lastOrder = await Page.findOne()
           .sort({ order: -1 })
           .select("order");
+
         const suggestedOrder = lastOrder ? lastOrder.order + 1 : 1;
 
         return res.status(400).json({
@@ -165,13 +205,15 @@ const updatePage = async (req, res) => {
       }
     }
 
-    // Update fields
-    page.name = name;
-    page.slug = slug;
-    page.description = description;
-    page.availableActions = availableActions;
-    page.order = order;
-    page.group = group || null;
+    // 🔹 Update only provided fields
+    if (name !== undefined) page.name = name;
+    if (slug !== undefined) page.slug = slug;
+    if (iconName !== undefined) page.iconName = iconName;
+    if (description !== undefined) page.description = description;
+    if (availableActions !== undefined)
+      page.availableActions = availableActions;
+    if (order !== undefined) page.order = order;
+    if (group !== undefined) page.group = group || null;
 
     await page.save();
 

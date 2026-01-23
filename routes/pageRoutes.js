@@ -8,14 +8,22 @@ const {
   deletePage,
 } = require("../controllers/pageController");
 const { authenticate } = require("../middleware/auth.js");
-
-// All routes require authentication
-// router.use(authenticate);
+const { checkPermission } = require("../middleware/checkPermission.js");
 
 router.get("/pages-list", getAllPages);
-router.post("/create-page", createPage);
-router.put("/edit-page/:id", updatePage);
+router.post(
+  "/create-page",
+  authenticate,
+  checkPermission("Pages", "create"),
+  createPage,
+);
+router.put("/edit-page/:id", checkPermission("Pages", "edit"), updatePage);
 router.get("/page/:id", getPageById);
-router.delete("/delete-page/:id", deletePage);
+router.delete(
+  "/delete-page/:id",
+  authenticate,
+  checkPermission("Pages", "delete"),
+  deletePage,
+);
 
 module.exports = router;

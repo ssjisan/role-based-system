@@ -10,11 +10,12 @@ const {
 const { authenticate } = require("../middleware/auth.js");
 const { checkPermission } = require("../middleware/checkPermission");
 
-// All routes require authentication
-// router.use(authenticate);
-
-// Create role (requires permission)
-router.post("/create-role", createRole);
+router.post(
+  "/create-role",
+  authenticate,
+  checkPermission("Roles", "create"),
+  createRole,
+);
 
 // Get all roles
 router.get("/roles", getAllRoles);
@@ -26,6 +27,11 @@ router.get("/role/:id", getRoleById);
 router.put("/edit-role/:id", updateRole);
 
 // Delete role
-router.delete("/:id", checkPermission("role", "delete"), deleteRole);
+router.delete(
+  "/roles/:id",
+  authenticate,
+  checkPermission("Roles", "delete"),
+  deleteRole,
+);
 
 module.exports = router;
