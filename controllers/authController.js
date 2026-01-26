@@ -144,8 +144,37 @@ const getProfile = async (req, res) => {
   }
 };
 
+const getUsers = async (req, res) => {
+  try {
+    // Fetch users and populate the role name
+    const users = await User.find({})
+      .select("name email role createdAt") // Only select needed fields
+      .populate("role", "name"); // Populate role field with only the name
+
+    // Transform data if needed
+    const userList = users.map((user) => ({
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role ? user.role.name : null,
+      createdAt: user.createdAt,
+    }));
+
+    res.status(200).json({
+      success: true,
+      users: userList,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   register,
   login,
   getProfile,
+  getUsers,
 };

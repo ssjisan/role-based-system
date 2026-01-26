@@ -1,5 +1,5 @@
 const Role = require("../models/roleModel.js");
-
+const User = require("../models/userModel.js");
 /**
  * Create a new role
  */
@@ -116,24 +116,35 @@ const updateRole = async (req, res) => {
  */
 const deleteRole = async (req, res) => {
   try {
-    const role = await Role.findByIdAndDelete(req.params.id);
+    const { id } = req.params;
 
-    if (!role) {
-      return res.status(404).json({
+    const role = await Role.findById(id);
+    if (!role)
+      return res
+        .status(404)
+        .json({ success: false, message: "Role not found" });
+
+    if (role.isDefault)
+      return res
+        .status(400)
+        .json({ success: false, message: "Default role cannot be deleted" });
+
+    const userCount = await User.countDocuments({ role: id });
+
+    if (userCount > 0) {
+      return res.status(400).json({
         success: false,
-        message: "Role not found",
+        message: `Cannot delete role. ${userCount} user(s) assigned to this role.`,
       });
     }
 
-    res.status(200).json({
-      success: true,
-      message: "Role deleted successfully",
-    });
+    await role.deleteOne();
+
+    res
+      .status(200)
+      .json({ success: true, message: "Role deleted successfully" });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 

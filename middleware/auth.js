@@ -12,7 +12,9 @@ const authenticate = async (req, res, next) => {
     const token = authHeader.split(" ")[1];
     const decoded = verifyToken(token);
 
-    const user = await User.findById(decoded.userId).select("role email");
+    const user = await User.findById(decoded.userId)
+      .select("role email")
+      .populate("role", "name");
 
     if (!user) {
       return res.status(401).json({ message: "User not found" });
