@@ -16,7 +16,12 @@ router.post(
   checkPermission("Page Group", "create"),
   createPageGroup,
 );
-router.get("/page-groups", getAllPageGroups);
+router.get(
+  "/page-groups",
+  authenticate,
+  checkPermission("Page Group", "view"),
+  getAllPageGroups,
+);
 router.get("/page-groups/:id", getPageGroupById);
 router.put(
   "/edit-page-group/:id",

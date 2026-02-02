@@ -18,7 +18,12 @@ router.post(
 );
 
 // Get all roles
-router.get("/roles", getAllRoles);
+router.get(
+  "/roles",
+  authenticate,
+  checkPermission("Roles", "view"),
+  getAllRoles,
+);
 
 // Get single role
 router.get("/role/:id", getRoleById);

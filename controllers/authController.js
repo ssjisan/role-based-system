@@ -3,13 +3,7 @@ const {
   hashPassword,
   comparePassword,
 } = require("../middleware/passwordMiddleware.js");
-const jwt = require("jsonwebtoken");
-
-const generateToken = (userId) => {
-  return jwt.sign({ userId }, process.env.JWT_SECRET, {
-    expiresIn: "7d",
-  });
-};
+const { generateToken } = require("../middleware/verifyToken.js");
 
 const register = async (req, res) => {
   try {

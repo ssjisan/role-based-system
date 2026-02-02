@@ -10,7 +10,12 @@ const {
 const { authenticate } = require("../middleware/auth.js");
 const { checkPermission } = require("../middleware/checkPermission.js");
 
-router.get("/pages-list", getAllPages);
+router.get(
+  "/pages-list",
+  authenticate,
+  checkPermission("Pages", "view"),
+  getAllPages,
+);
 router.post(
   "/create-page",
   authenticate,
